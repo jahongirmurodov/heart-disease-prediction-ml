@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CardioScan — Диагностика сердца</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0b0f1a;
+      --surface: #131929;
+      --surface2: #1a2236;
+      --border: rgba(255,255,255,0.07);
+      --accent: #e8432d;
+      --accent2: #ff6b4a;
+      --gold: #f0c060;
+      --text: #e8eaf0;
+      --muted: #7a8499;
+      --success: #2dce89;
+      --danger: #e8432d;
+      --radius: 16px;
+      --shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Background mesh ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 10% 10%, rgba(232,67,45,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 90% 80%, rgba(45,110,200,0.07) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Header ── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(11,15,26,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.4rem;
+      letter-spacing: -0.02em;
+    }
+
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+
+    .lang-switcher {
+      display: flex;
+      gap: 4px;
+      background: var(--surface);
+      border-radius: 10px;
+      padding: 4px;
+      border: 1px solid var(--border);
+    }
+
+    .lang-btn {
+      padding: 6px 14px;
+      border-radius: 7px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.03em;
+    }
+
+    .lang-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .lang-btn:hover:not(.active) { color: var(--text); background: var(--surface2); }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 5rem 2rem 3rem;
+    }
+
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(232,67,45,0.12);
+      border: 1px solid rgba(232,67,45,0.25);
+      color: var(--accent2);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 100px;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 1rem;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      color: var(--accent2);
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 500px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* ── Container ── */
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 1.5rem 4rem;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-icon {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .card-icon.red { background: rgba(232,67,45,0.15); }
+    .card-icon.blue { background: rgba(45,110,200,0.15); }
+    .card-icon.green { background: rgba(45,206,137,0.15); }
+    .card-icon.gold { background: rgba(240,192,96,0.15); }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .card-sub {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* ── Grid ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+    @media (max-width: 620px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+
+    /* ── Field ── */
+    .field { display: flex; flex-direction: column; gap: 6px; }
+
+    .field label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .field input, .field select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      padding: 12px 14px;
+      width: 100%;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    .field input:focus, .field select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(232,67,45,0.12);
+    }
+
+    .field input::placeholder { color: rgba(122,132,153,0.5); }
+
+    .field select option {
+      background: var(--surface2);
+      color: var(--text);
+    }
+
+    .field-hint {
+      font-size: 0.73rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    /* ── Toggle group ── */
+    .toggle-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .toggle-btn {
+      flex: 1;
+      padding: 11px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .toggle-btn.selected {
+      border-color: var(--accent);
+      background: rgba(232,67,45,0.12);
+      color: var(--accent2);
+    }
+
+    .toggle-btn:hover:not(.selected) { border-color: rgba(255,255,255,0.15); color: var(--text); }
+
+    /* ── Submit button ── */
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.02em;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%);
+    }
+
+    .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(232,67,45,0.35); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Result ── */
+    #result {
+      display: none;
+      margin-top: 1.5rem;
+    }
+
+    .result-card {
+      border-radius: var(--radius);
+      padding: 2rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid transparent;
+      animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-card.healthy {
+      background: linear-gradient(135deg, rgba(45,206,137,0.1), rgba(45,206,137,0.05));
+      border-color: rgba(45,206,137,0.3);
+    }
+
+    .result-card.disease {
+      background: linear-gradient(135deg, rgba(232,67,45,0.1), rgba(232,67,45,0.05));
+      border-color: rgba(232,67,45,0.3);
+    }
+
+    .result-icon {
+      font-size: 3.5rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .result-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .result-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .result-card.healthy .result-title { color: var(--success); }
+    .result-card.disease .result-title { color: var(--danger); }
+
+    .result-desc {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      max-width: 400px;
+      margin: 0 auto 1.5rem;
+    }
+
+    /* ── Probability bar ── */
+    .prob-bars {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 1.5rem;
+      text-align: left;
+    }
+
+    .prob-item label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .prob-bar-wrap {
+      background: rgba(255,255,255,0.06);
+      border-radius: 100px;
+      height: 6px;
+      overflow: hidden;
+    }
+
+    .prob-bar {
+      height: 100%;
+      border-radius: 100px;
+      transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .prob-bar.green { background: var(--success); }
+    .prob-bar.red   { background: var(--danger); }
+
+    .prob-value {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .prob-value.green { color: var(--success); }
+    .prob-value.red   { color: var(--danger); }
+
+    /* ── Info pill ── */
+    .info-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    /* ── Error ── */
+    .error-msg {
+      background: rgba(232,67,45,0.1);
+      border: 1px solid rgba(232,67,45,0.3);
+      border-radius: 10px;
+      padding: 14px 18px;
+      color: var(--accent2);
+      font-size: 0.88rem;
+      animation: slideUp 0.3s ease;
+    }
+
+    /* ── Footer ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 2rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── Number input arrows hidden ── */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input[type=number] { -moz-appearance: textfield; }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">❤️</div>
+    CardioScan
+  </div>
+  <div class="lang-switcher">
+    <button class="lang-btn active" onclick="setLang('ru')">РУС</button>
+    <button class="lang-btn" onclick="setLang('uz')">UZB</button>
+    <button class="lang-btn" onclick="setLang('en')">ENG</button>
+  </div>
+</header>
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <div class="hero-tag">🫀 <span data-i18n="tag">AI-диагностика</span></div>
+  <h1><span data-i18n="h1a">Проверьте здоровье</span><br><em data-i18n="h1b">своего сердца</em></h1>
+  <p data-i18n="subtitle">Введите ваши клинические показатели — модель машинного обучения проанализирует риск сердечно-сосудистых заболеваний.</p>
+</div>
+
+<!-- ── FORM ── -->
+<div class="container">
+  <form id="predForm">
+
+    <!-- Patient info -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon red">👤</div>
+        <div>
+          <div class="card-title" data-i18n="sec_patient">Данные пациента</div>
+          <div class="card-sub" data-i18n="sec_patient_sub">Персональная информация</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label data-i18n="lbl_first">Имя</label>
+          <input type="text" id="first_name" data-i18n-placeholder="ph_first" placeholder="Иван" />
+        </div>
+        <div class="field">
+          <label data-i18n="lbl_last">Фамилия</label>
+          <input type="text" id="last_name" data-i18n-placeholder="ph_last" placeholder="Иванов" />
+        </div>
+        <div class="field">
+          <label data-i18n="lbl_age">Возраст (лет)</label>
+          <input type="number" id="age" min="1" max="120" placeholder="45" required />
+          <span class="field-hint" data-i18n="hint_age">Введите возраст в годах — система автоматически переведёт в дни</span>
+        </div>
+        <div class="field">
+          <label data-i18n="lbl_gender">Пол</label>
+          <div class="toggle-group">
+            <button type="button" class="toggle-btn selected" data-value="2" onclick="selectToggle('gender', 2, this)" data-i18n="gender_male">Мужской</button>
+            <button type="button" class="toggle-btn" data-value="1" onclick="selectToggle('gender', 1, this)" data-i18n="gender_female">Женский</button>
+          </div>
+          <input type="hidden" id="gender" value="2" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Physical -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon blue">📏</div>
+        <div>
+          <div class="card-title" data-i18n="sec_phys">Физические параметры</div>
+          <div class="card-sub" data-i18n="sec_phys_sub">Рост, вес и давление</div>
+        </div>
+      </div>
+      <div class="grid-3">
+        <div class="field">
+          <label data-i18n="lbl_height">Рост (см)</label>
+          <input type="number" id="height" min="100" max="250" placeholder="170" required />
+        </div>
+        <div class="field">
+          <label data-i18n="lbl_weight">Вес (кг)</label>
+          <input type="number" id="weight" min="20" max="300" step="0.1" placeholder="70" required />
+        </div>
+        <div class="field" style="grid-column: 1 / -1"></div>
+        <div class="field">
+          <label data-i18n="lbl_ap_hi">Систолическое давление</label>
+          <input type="number" id="ap_hi" min="60" max="300" placeholder="120" required />
+          <span class="field-hint" data-i18n="hint_ap_hi">Верхнее значение, мм рт. ст.</span>
+        </div>
+        <div class="field">
+          <label data-i18n="lbl_ap_lo">Диастолическое давление</label>
+          <input type="number" id="ap_lo" min="40" max="200" placeholder="80" required />
+          <span class="field-hint" data-i18n="hint_ap_lo">Нижнее значение, мм рт. ст.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lab -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon gold">🧪</div>
+        <div>
+          <div class="card-title" data-i18n="sec_lab">Лабораторные показатели</div>
+          <div class="card-sub" data-i18n="sec_lab_sub">Холестерин и глюкоза</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label data-i18n="lbl_chol">Холестерин</label>
+          <select id="cholesterol" required>
+            <option value="1" data-i18n="chol_1">Норма</option>
+            <option value="2" data-i18n="chol_2">Выше нормы</option>
+            <option value="3" data-i18n="chol_3">Значительно выше нормы</option>
+          </select>
+        </div>
+        <div class="field">
+          <label data-i18n="lbl_gluc">Глюкоза</label>
+          <select id="gluc" required>
+            <option value="1" data-i18n="gluc_1">Норма</option>
+            <option value="2" data-i18n="gluc_2">Выше нормы</option>
+            <option value="3" data-i18n="gluc_3">Значительно выше нормы</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lifestyle -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon green">🏃</div>
+        <div>
+          <div class="card-title" data-i18n="sec_life">Образ жизни</div>
+          <div class="card-sub" data-i18n="sec_life_sub">Вредные привычки и активность</div>
+        </div>
+      </div>
+      <div class="grid-3">
+        <div class="field">
+          <label data-i18n="lbl_smoke">Курение</label>
+          <div class="toggle-group">
+            <button type="button" class="toggle-btn selected" data-value="0" onclick="selectToggle('smoke', 0, this)" data-i18n="no">Нет</button>
+            <button type="button" class="toggle-btn" data-value="1" onclick="selectToggle('smoke', 1, this)" data-i18n="yes">Да</button>
+          </div>
+          <input type="hidden" id="smoke" value="0" />
+        </div>
+        <div class="field">
+          <label data-i18n="lbl_alco">Алкоголь</label>
+          <div class="toggle-group">
+            <button type="button" class="toggle-btn selected" data-value="0" onclick="selectToggle('alco', 0, this)" data-i18n="no">Нет</button>
+            <button type="button" class="toggle-btn" data-value="1" onclick="selectToggle('alco', 1, this)" data-i18n="yes">Да</button>
+          </div>
+          <input type="hidden" id="alco" value="0" />
+        </div>
+        <div class="field">
+          <label data-i18n="lbl_active">Физическая активность</label>
+          <div class="toggle-group">
+            <button type="button" class="toggle-btn" data-value="0" onclick="selectToggle('active', 0, this)" data-i18n="no">Нет</button>
+            <button type="button" class="toggle-btn selected" data-value="1" onclick="selectToggle('active', 1, this)" data-i18n="yes">Да</button>
+          </div>
+          <input type="hidden" id="active" value="1" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <button type="submit" class="btn-primary" id="submitBtn">
+      <span data-i18n="btn_submit">Анализировать</span>
+    </button>
+
+  </form>
+
+  <!-- Result -->
+  <div id="result"></div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <span data-i18n="footer">CardioScan использует модель машинного обучения. Результат носит информационный характер и не заменяет консультацию врача.</span>
+</footer>
+
+<script>
+  // ─── Translations ───
+  const i18n = {
+    ru: {
+      tag: "AI-диагностика",
+      h1a: "Проверьте здоровье",
+      h1b: "своего сердца",
+      subtitle: "Введите ваши клинические показатели — модель машинного обучения проанализирует риск сердечно-сосудистых заболеваний.",
+      sec_patient: "Данные пациента",
+      sec_patient_sub: "Персональная информация",
+      lbl_first: "Имя",
+      lbl_last: "Фамилия",
+      ph_first: "Иван",
+      ph_last: "Иванов",
+      lbl_age: "Возраст (лет)",
+      hint_age: "Введите возраст в годах — система автоматически переведёт в дни",
+      lbl_gender: "Пол",
+      gender_male: "Мужской",
+      gender_female: "Женский",
+      sec_phys: "Физические параметры",
+      sec_phys_sub: "Рост, вес и давление",
+      lbl_height: "Рост (см)",
+      lbl_weight: "Вес (кг)",
+      lbl_ap_hi: "Систолическое давление",
+      hint_ap_hi: "Верхнее значение, мм рт. ст.",
+      lbl_ap_lo: "Диастолическое давление",
+      hint_ap_lo: "Нижнее значение, мм рт. ст.",
+      sec_lab: "Лабораторные показатели",
+      sec_lab_sub: "Холестерин и глюкоза",
+      lbl_chol: "Холестерин",
+      chol_1: "Норма",
+      chol_2: "Выше нормы",
+      chol_3: "Значительно выше нормы",
+      lbl_gluc: "Глюкоза",
+      gluc_1: "Норма",
+      gluc_2: "Выше нормы",
+      gluc_3: "Значительно выше нормы",
+      sec_life: "Образ жизни",
+      sec_life_sub: "Вредные привычки и активность",
+      lbl_smoke: "Курение",
+      lbl_alco: "Алкоголь",
+      lbl_active: "Физическая активность",
+      no: "Нет",
+      yes: "Да",
+      btn_submit: "Анализировать",
+      footer: "CardioScan использует модель машинного обучения. Результат носит информационный характер и не заменяет консультацию врача.",
+      analyzing: "Анализируем...",
+      res_patient: "Пациент",
+      res_age_days: "Возраст в днях",
+      res_healthy_title: "Сердце здорово",
+      res_healthy_desc: "По результатам анализа признаков сердечно-сосудистого заболевания не выявлено. Продолжайте вести здоровый образ жизни!",
+      res_disease_title: "Выявлен риск",
+      res_disease_desc: "Модель выявила признаки возможного сердечно-сосудистого заболевания. Рекомендуем обратиться к кардиологу.",
+      prob_healthy: "Вероятность здоров",
+      prob_disease: "Вероятность болезни",
+    },
+    uz: {
+      tag: "AI-tashxis",
+      h1a: "Yurak salomatligingizni",
+      h1b: "tekshiring",
+      subtitle: "Klinik ko'rsatkichlaringizni kiriting — sun'iy intellekt yurak-qon tomir kasalliklari xavfini tahlil qiladi.",
+      sec_patient: "Bemor ma'lumotlari",
+      sec_patient_sub: "Shaxsiy ma'lumotlar",
+      lbl_first: "Ism",
+      lbl_last: "Familiya",
+      ph_first: "Jasur",
+      ph_last: "Karimov",
+      lbl_age: "Yosh (yillarda)",
+      hint_age: "Yoshni yillarda kiriting — tizim avtomatik ravishda kunlarga aylantiradi",
+      lbl_gender: "Jinsi",
+      gender_male: "Erkak",
+      gender_female: "Ayol",
+      sec_phys: "Jismoniy parametrlar",
+      sec_phys_sub: "Bo'y, vazn va qon bosimi",
+      lbl_height: "Bo'y (sm)",
+      lbl_weight: "Vazn (kg)",
+      lbl_ap_hi: "Sistolik qon bosimi",
+      hint_ap_hi: "Yuqori qiymat, mm Hg",
+      lbl_ap_lo: "Diastolik qon bosimi",
+      hint_ap_lo: "Quyi qiymat, mm Hg",
+      sec_lab: "Laboratoriya ko'rsatkichlari",
+      sec_lab_sub: "Xolesterin va glyukoza",
+      lbl_chol: "Xolesterin",
+      chol_1: "Normal",
+      chol_2: "Normaldan yuqori",
+      chol_3: "Ancha yuqori",
+      lbl_gluc: "Glyukoza",
+      gluc_1: "Normal",
+      gluc_2: "Normaldan yuqori",
+      gluc_3: "Ancha yuqori",
+      sec_life: "Turmush tarzi",
+      sec_life_sub: "Yomon odatlar va faollik",
+      lbl_smoke: "Chekish",
+      lbl_alco: "Alkogol",
+      lbl_active: "Jismoniy faollik",
+      no: "Yo'q",
+      yes: "Ha",
+      btn_submit: "Tahlil qilish",
+      footer: "CardioScan mashinaviy o'qitish modelidan foydalanadi. Natija ma'lumotnoma xususiyatiga ega va shifokor maslahatini almashtirmaydi.",
+      analyzing: "Tahlil qilinmoqda...",
+      res_patient: "Bemor",
+      res_age_days: "Yosh (kunlarda)",
+      res_healthy_title: "Yurak sog'lom",
+      res_healthy_desc: "Tahlil natijalari bo'yicha yurak-qon tomir kasalligi belgilari aniqlanmadi. Sog'lom turmush tarzini davom ettiring!",
+      res_disease_title: "Xavf aniqlandi",
+      res_disease_desc: "Model mumkin bo'lgan yurak-qon tomir kasalligi belgilarini aniqladi. Kardiologga murojaat qilishni tavsiya etamiz.",
+      prob_healthy: "Sog'lom ehtimoli",
+      prob_disease: "Kasallik ehtimoli",
+    },
+    en: {
+      tag: "AI Diagnostics",
+      h1a: "Check the health",
+      h1b: "of your heart",
+      subtitle: "Enter your clinical indicators — the machine learning model will analyze your cardiovascular disease risk.",
+      sec_patient: "Patient Information",
+      sec_patient_sub: "Personal details",
+      lbl_first: "First Name",
+      lbl_last: "Last Name",
+      ph_first: "John",
+      ph_last: "Smith",
+      lbl_age: "Age (years)",
+      hint_age: "Enter age in years — the system will automatically convert to days",
+      lbl_gender: "Gender",
+      gender_male: "Male",
+      gender_female: "Female",
+      sec_phys: "Physical Parameters",
+      sec_phys_sub: "Height, weight and blood pressure",
+      lbl_height: "Height (cm)",
+      lbl_weight: "Weight (kg)",
+      lbl_ap_hi: "Systolic Pressure",
+      hint_ap_hi: "Upper value, mmHg",
+      lbl_ap_lo: "Diastolic Pressure",
+      hint_ap_lo: "Lower value, mmHg",
+      sec_lab: "Laboratory Results",
+      sec_lab_sub: "Cholesterol and glucose",
+      lbl_chol: "Cholesterol",
+      chol_1: "Normal",
+      chol_2: "Above normal",
+      chol_3: "Well above normal",
+      lbl_gluc: "Glucose",
+      gluc_1: "Normal",
+      gluc_2: "Above normal",
+      gluc_3: "Well above normal",
+      sec_life: "Lifestyle",
+      sec_life_sub: "Habits and physical activity",
+      lbl_smoke: "Smoking",
+      lbl_alco: "Alcohol",
+      lbl_active: "Physical activity",
+      no: "No",
+      yes: "Yes",
+      btn_submit: "Analyze",
+      footer: "CardioScan uses a machine learning model. Results are informational only and do not replace medical consultation.",
+      analyzing: "Analyzing...",
+      res_patient: "Patient",
+      res_age_days: "Age in days",
+      res_healthy_title: "Heart is Healthy",
+      res_healthy_desc: "The analysis found no signs of cardiovascular disease. Keep up the healthy lifestyle!",
+      res_disease_title: "Risk Detected",
+      res_disease_desc: "The model detected signs of possible cardiovascular disease. We recommend consulting a cardiologist.",
+      prob_healthy: "Probability Healthy",
+      prob_disease: "Probability Disease",
+    }
+  };
+
+  let currentLang = 'ru';
+
+  function setLang(lang) {
+    currentLang = lang;
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.lang-btn[onclick="setLang('${lang}')"]`).classList.add('active');
+    applyTranslations();
+  }
+
+  function applyTranslations() {
+    const t = i18n[currentLang];
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (t[key] !== undefined) el.textContent = t[key];
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      if (t[key] !== undefined) el.placeholder = t[key];
+    });
+    // Update select options
+    document.querySelectorAll('select option[data-i18n]').forEach(opt => {
+      const key = opt.getAttribute('data-i18n');
+      if (t[key] !== undefined) opt.textContent = t[key];
+    });
+  }
+
+  // ─── Toggle buttons ───
+  function selectToggle(fieldId, value, btn) {
+    document.getElementById(fieldId).value = value;
+    const group = btn.closest('.toggle-group');
+    group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+
+  // ─── Form submit ───
+  document.getElementById('predForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const t = i18n[currentLang];
+    const btn = document.getElementById('submitBtn');
+    const resultDiv = document.getElementById('result');
+
+    // Validate required
+    const age = document.getElementById('age').value;
+    const height = document.getElementById('height').value;
+    const weight = document.getElementById('weight').value;
+    const ap_hi = document.getElementById('ap_hi').value;
+    const ap_lo = document.getElementById('ap_lo').value;
+
+    if (!age || !height || !weight || !ap_hi || !ap_lo) {
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = `<div class="error-msg">⚠️ ${currentLang === 'ru' ? 'Заполните все обязательные поля' : currentLang === 'uz' ? "Barcha majburiy maydonlarni to'ldiring" : 'Please fill in all required fields'}</div>`;
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span>${t.analyzing}`;
+
+    const payload = {
+      first_name: document.getElementById('first_name').value,
+      last_name: document.getElementById('last_name').value,
+      age, height, weight,
+      gender: document.getElementById('gender').value,
+      ap_hi, ap_lo,
+      cholesterol: document.getElementById('cholesterol').value,
+      gluc: document.getElementById('gluc').value,
+      smoke: document.getElementById('smoke').value,
+      alco: document.getElementById('alco').value,
+      active: document.getElementById('active').value,
+    };
+
+    try {
+      const resp = await fetch('/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await resp.json();
+
+      if (data.error) throw new Error(data.error);
+
+      const isHealthy = data.prediction === 0;
+      const icon = isHealthy ? '💚' : '🚨';
+      const cls = isHealthy ? 'healthy' : 'disease';
+      const title = isHealthy ? t.res_healthy_title : t.res_disease_title;
+      const desc = isHealthy ? t.res_healthy_desc : t.res_disease_desc;
+
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = `
+        <div class="result-card ${cls}">
+          ${data.patient_name ? `<div class="info-pill">👤 ${t.res_patient}: <strong>${data.patient_name}</strong></div>` : ''}
+          <span class="result-icon">${icon}</span>
+          <div class="result-title">${title}</div>
+          <p class="result-desc">${desc}</p>
+          <div class="info-pill" style="justify-content:center">📅 ${t.res_age_days}: <strong>${data.age_days.toLocaleString()}</strong></div>
+          <div class="prob-bars">
+            <div class="prob-item">
+              <label>${t.prob_healthy}</label>
+              <div class="prob-bar-wrap"><div class="prob-bar green" id="bar-healthy" style="width:0%"></div></div>
+              <div class="prob-value green">${data.probability_healthy}%</div>
+            </div>
+            <div class="prob-item">
+              <label>${t.prob_disease}</label>
+              <div class="prob-bar-wrap"><div class="prob-bar red" id="bar-disease" style="width:0%"></div></div>
+              <div class="prob-value red">${data.probability_disease}%</div>
+            </div>
+          </div>
+        </div>`;
+
+      // Animate bars
+      setTimeout(() => {
+        document.getElementById('bar-healthy').style.width = data.probability_healthy + '%';
+        document.getElementById('bar-disease').style.width = data.probability_disease + '%';
+      }, 50);
+
+      resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    } catch (err) {
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<span data-i18n="btn_submit">${t.btn_submit}</span>`;
+    }
+  });
+</script>
+</body>
+</html>
